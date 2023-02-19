@@ -1,18 +1,72 @@
 package processes
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"time"
+	"unicode/utf8"
 )
 
-// Hello returns a greeting for the named person.
-func Hello(name string) string {
+type person struct {
+	name string
+	age  int
+}
+
+// Interfaces are named collections of method signatures.
+type geometry interface {
+	area() float64
+	perim() float64
+}
+
+type rect struct {
+	width, height float64
+}
+type circle struct {
+	radius float64
+}
+
+func (r rect) area() float64 { // rect has function area()
+	return r.width * r.height
+}
+func (r rect) perim() float64 { // rect has function perim()
+	return 2*r.width + 2*r.height
+}
+
+func (c circle) area() float64 { // circle has function area()
+	return math.Pi * c.radius * c.radius
+}
+func (c circle) perim() float64 { // circle has function perim()
+	return 2 * math.Pi * c.radius
+}
+
+func measure(g geometry) { // input of type geometry must have the declared functions.
+	fmt.Println(g)
+	fmt.Println(g.area())
+	fmt.Println(g.perim())
+}
+
+type base struct {
+	num int
+}
+
+func (b base) describe() string {
+	return fmt.Sprintf("base with num=%v", b.num)
+}
+
+type container struct {
+	base
+	str string
+}
+
+// hello returns a greeting for the named person.
+func hello(name string) string {
 	// Return a greeting that embeds the name in a message.
 	message := fmt.Sprintf("Hi, %v. Welcome!", name)
 	return message
 }
 
-func Values() {
+func values() {
 
 	fmt.Println("go" + "lang")
 
@@ -24,7 +78,7 @@ func Values() {
 	fmt.Println(!true)
 }
 
-func Variables() {
+func variables() {
 
 	var a = "initial"
 	fmt.Println(a)
@@ -64,6 +118,8 @@ func Variables() {
 		slice with non-zero length, use the builtin make. Here we make a slice of strings of length 3 (initially zero-valued).
 	*/
 
+	fmt.Println("Slices")
+
 	s := make([]string, 3)
 	fmt.Println("emp:", s)
 
@@ -95,6 +151,7 @@ func Variables() {
 	fmt.Println("2d: ", twoD2)
 
 	// map
+	fmt.Println("Maps")
 	m := make(map[string]int)
 	m["k1"] = 7
 	m["k2"] = 13
@@ -130,7 +187,7 @@ func Variables() {
 	}
 }
 
-func LoopIfElseSWitch() {
+func loopIfElseSWitch() {
 	j := 1
 	for j <= 9 {
 		fmt.Println(j)
@@ -224,11 +281,176 @@ func sum(nums ...int) {
 	fmt.Println(total)
 }
 
-//closures
-func IntSeq() func() int {
+// closures
+func intSeq() func() int {
 	i := 0
 	return func() int {
 		i++
 		return i
+	}
+}
+
+// recursion
+func fact(n int) int {
+	if n == 0 {
+		return 1
+	}
+	return n * fact(n-1)
+}
+
+func zeroVal(ival int) { // passed by value
+	ival = 0
+}
+
+func zeroPtr(iptr *int) { // int pointer as input, is a memory address
+	// *iptr dereferences the pointer from its memory address to the current value at that address.
+	// the value on memory address iptr changes on 0
+	*iptr = 0 // changes value at the memory
+}
+
+func stringsAndRunes() {
+	const s = "สวัสดี" // slice of bytes, each char or rune consists of the bytes from Utf-8
+	//ส == E0 B8 AA
+	//ดี 2 codepoints ด = E0 B8 94 en ี  = E0 B8 B5
+	fmt.Println("Len:", len(s))
+	for i := 0; i < len(s); i++ {
+		fmt.Printf("%x ", s[i])
+	}
+	fmt.Println()
+
+	fmt.Println("Rune count:", utf8.RuneCountInString(s))
+
+	for idx, runeValue := range s {
+		fmt.Printf("%#U starts at %d\n", runeValue, idx)
+	}
+
+	fmt.Println("\nUsing DecodeRuneInString")
+	for i, w := 0, 0; i < len(s); i += w {
+		runeValue, width := utf8.DecodeRuneInString(s[i:]) //from i to end
+		fmt.Printf("%#U starts at %d\n", runeValue, i)
+		w = width
+
+		examineRune(runeValue)
+	}
+
+	x, y := 0, 0
+
+	print(x, y)
+	println()
+
+	word := "Hoi pipeloi"
+
+	println(word[2:])
+
+}
+
+func examineRune(r rune) { // type rune
+	if r == 't' { //rune literal
+		fmt.Println("found tee")
+	} else if r == 'ส' {
+		fmt.Println("found so sua")
+	}
+}
+
+func newPerson(name string) *person {
+	p := person{name: name}
+	p.age = 42
+	return &p
+}
+
+func f1(arg int) (int, error) {
+	if arg == 42 {
+		return -1, errors.New("can't work with 42")
+	}
+	return arg + 3, nil
+}
+
+type argError struct {
+	arg  int
+	prob string
+}
+
+func (e *argError) Error() string {
+	return fmt.Sprintf("%d - %s", e.arg, e.prob)
+}
+
+func f2(arg int) (int, error) {
+	if arg == 42 {
+		return -1, &argError{arg, "can't work with it"}
+	}
+	return arg + 3, nil
+
+}
+
+func ManyLanguageElements() {
+	// Get a greeting message and print it.
+	message := hello("Gladys")
+	fmt.Println(message)
+
+	values()
+	variables()
+	loopIfElseSWitch()
+
+	nextInt := intSeq() // sets variable i to 0 and passes this to the enclosed function
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
+	newInts := intSeq()
+	fmt.Println(newInts())
+
+	sum(1, 2)
+
+	fmt.Println(fact(7))
+
+	var fib func(n int) int
+	fib = func(n int) int {
+		if n < 2 {
+			return n
+		}
+		return fib(n-1) + fib(n-2)
+	}
+	fmt.Println(fib(7))
+	i := 1
+	fmt.Println("initial:", i)
+	zeroVal(i)
+	fmt.Println("zeroval:", i) // no change to i
+	zeroPtr(&i)                // passes the memory address of i.
+	fmt.Println("zeroptr:", i)
+	fmt.Println("pointer:", &i)
+
+	stringsAndRunes()
+
+	fmt.Println(person{name: "Bob", age: 20})
+	fmt.Println(newPerson("Sheldon")) // pointer to struct
+
+	//Go automatically handles conversion between values and pointers for method calls.
+	r := rect{width: 10, height: 5}
+	fmt.Println("area: ", r.area())
+	fmt.Println("perim:", r.perim())
+
+	rp := &r
+	fmt.Println("area: ", rp.area())
+	fmt.Println("perim:", rp.perim())
+
+	for _, i := range []int{7, 42} {
+		if r, e := f1(i); e != nil {
+			fmt.Println("f1 failed:", e)
+		} else {
+			fmt.Println("f1 worked:", r)
+		}
+	}
+
+	for _, i := range []int{7, 42} {
+		if r, e := f2(i); e != nil {
+			fmt.Println("f2 failed:", e)
+		} else {
+			fmt.Println("f2 worked:", r)
+		}
+	}
+
+	_, e := f2(42)
+	if ae, ok := e.(*argError); ok {
+		fmt.Println(ae.arg)
+		fmt.Println(ae.prob)
 	}
 }
