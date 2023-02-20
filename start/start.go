@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -220,6 +221,92 @@ func rangeOverChannels() {
 	}
 }
 
+func timer() {
+	timer1 := time.NewTimer(2 * time.Second) // time.NewTimer()
+
+	<-timer1.C
+	fmt.Println("Timer 1 fired")
+
+	timer2 := time.NewTimer(time.Second)
+	go func() {
+		<-timer2.C
+		fmt.Println("Timer 2 fired")
+	}()
+	stop2 := timer2.Stop()
+	if stop2 {
+		fmt.Println("Timer 2 stopped")
+	}
+
+	time.Sleep(2 * time.Second)
+
+}
+
+func ticker() {
+	ticker := time.NewTicker(500 * time.Millisecond) // time.NewTicker()
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case t := <-ticker.C:
+				fmt.Println("Tick at", t)
+			}
+		}
+	}()
+
+	time.Sleep(1600 * time.Millisecond)
+	ticker.Stop()
+	done <- true
+	fmt.Println("Ticker stopped")
+}
+
+func worker2(id int, jobs <-chan int, results chan<- int) {
+	for j := range jobs {
+		fmt.Println("worker", id, "started  job", j)
+		time.Sleep(time.Second)
+		fmt.Println("worker", id, "finished job", j)
+		results <- j * 2
+	}
+}
+
+func workerPools() {
+	const numJobs = 5
+	jobs := make(chan int, numJobs)
+	results := make(chan int, numJobs)
+
+	for w := 1; w <= 3; w++ {
+		go worker2(w, jobs, results)
+	}
+
+	for j := 1; j <= numJobs; j++ {
+		jobs <- j
+	}
+	close(jobs)
+
+	for a := 1; a <= numJobs; a++ {
+		<-results
+	}
+
+}
+
+func atomicCounter() {
+	var ops uint64
+	var wg sync.WaitGroup // wg is a struct
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			for c := 0; c < 1000; c++ {
+				atomic.AddUint64(&ops, 1)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	fmt.Println("ops:", ops)
+}
+
 func main() {
 	//processes.ManyLanguageElements()
 	//fGoRoutine()
@@ -232,5 +319,10 @@ func main() {
 
 	//closingChannels()
 
-	rangeOverChannels()
+	//rangeOverChannels()
+
+	//timer()
+	//ticker()
+
+	atomicCounter()
 }

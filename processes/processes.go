@@ -453,4 +453,9 @@ func ManyLanguageElements() {
 		fmt.Println(ae.arg)
 		fmt.Println(ae.prob)
 	}
+
+	var x person
+	x.name = "aaa"
+	x.age = 25
+
 }
